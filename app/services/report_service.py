@@ -88,7 +88,7 @@ def get_kpi_dashboard_metrics(db: Session) -> Dict[str, Any]:
     # Same-day attendance entry rate (Target: 95%)
     sessions = db.query(AttendanceSession).all()
     same_day_count = sum(1 for s in sessions if s.session_date == s.created_at.date())
-    same_day_rate = round((same_day_count / len(sessions)) * 100, 1) if sessions else 96.2
+    same_day_rate = round((same_day_count / len(sessions)) * 100, 1) if sessions else 0.0
 
     # Internal marks moderation lock rate
     marks = db.query(InternalMark).all()

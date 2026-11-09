@@ -126,6 +126,10 @@ const App = {
       
       const attRateEl = document.getElementById('stat-attendance-rate');
       if (attRateEl) attRateEl.textContent = `${data.kpi_same_day_attendance_rate}%`;
+      const attendanceStatusEl = document.getElementById('stat-attendance-status');
+      if (attendanceStatusEl) {
+        attendanceStatusEl.textContent = `Target >${data.kpi_same_day_target} (${data.kpi_attendance_success ? 'Met' : 'Not Met'}) • 0 paper logs`;
+      }
 
       // Load at-risk alerts table
       const riskRes = await fetch('/api/ai/at-risk-students');
@@ -156,9 +160,15 @@ const App = {
             <td>${s.fee_due > 0 ? `<span style="color: var(--danger); font-weight: 600;">₹${s.fee_due.toLocaleString()}</span>` : '₹0'}</td>
             <td style="font-size: 12px; color: var(--text-muted);">${s.triggers.join(', ')}</td>
             <td>
-              <button class="btn btn-secondary btn-sm" onclick="App.triggerParentAlert(${s.student_id}, 'ATTENDANCE_SHORTAGE')">
-                📲 Alert Parent
-              </button>
+              ${s.attendance_pct < 75 ? `
+                <button class="btn btn-secondary btn-sm" onclick="App.triggerParentAlert(${s.student_id}, 'ATTENDANCE_SHORTAGE')">
+                  📲 Alert Parent
+                </button>
+              ` : (s.fee_due > 0 ? `
+                <button class="btn btn-secondary btn-sm" onclick="App.triggerParentAlert(${s.student_id}, 'FEE_DUE')">
+                  📲 Alert Parent
+                </button>
+              ` : '<span class="badge badge-neutral">No matching alert</span>')}
             </td>
           </tr>
         `).join('');
@@ -316,6 +326,14 @@ const App = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        const errorData = await res.json();
+        const detail = Array.isArray(errorData.detail)
+          ? errorData.detail.map(error => error.msg).join(', ')
+          : errorData.detail;
+        this.showToast(`Attendance save failed: ${detail || `HTTP ${res.status}`}`);
+        return;
+      }
       const data = await res.json();
       this.showToast(`Attendance saved! Marked ${data.present_count} present, ${data.absent_count} absent.`);
 
@@ -381,19 +399,19 @@ const App = {
             <td>
               <input type="number" min="0" max="20" step="0.5" class="form-control mark-input" 
                      id="midterm-${s.student_id}" value="${s.midterm_score}" 
-                     ${this.marksSheet.is_locked ? 'disabled' : ''} 
+                     ${s.is_locked ? 'disabled' : ''}
                      onchange="App.calcRowTotal(${s.student_id})" style="width: 80px;">
             </td>
             <td>
               <input type="number" min="0" max="10" step="0.5" class="form-control mark-input" 
                      id="quiz-${s.student_id}" value="${s.quiz_score}" 
-                     ${this.marksSheet.is_locked ? 'disabled' : ''} 
+                     ${s.is_locked ? 'disabled' : ''}
                      onchange="App.calcRowTotal(${s.student_id})" style="width: 80px;">
             </td>
             <td>
               <input type="number" min="0" max="10" step="0.5" class="form-control mark-input" 
                      id="assign-${s.student_id}" value="${s.assignment_score}" 
-                     ${this.marksSheet.is_locked ? 'disabled' : ''} 
+                     ${s.is_locked ? 'disabled' : ''}
                      onchange="App.calcRowTotal(${s.student_id})" style="width: 80px;">
             </td>
             <td>
@@ -431,7 +449,7 @@ const App = {
     if (!this.marksSheet) return;
     const subjectId = this.marksSheet.subject_id;
 
-    const updates = this.marksSheet.students.map(s => {
+    const updates = this.marksSheet.students.filter(s => !s.is_locked).map(s => {
       const mid = parseFloat(document.getElementById(`midterm-${s.student_id}`).value) || 0;
       const quiz = parseFloat(document.getElementById(`quiz-${s.student_id}`).value) || 0;
       const assign = parseFloat(document.getElementById(`assign-${s.student_id}`).value) || 0;

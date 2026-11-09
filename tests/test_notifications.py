@@ -55,3 +55,49 @@ def test_parent_alert_rejects_unsupported_trigger(db):
 
     assert response.status_code == 422
     assert db.query(NotificationLog).count() == existing_log_count
+
+
+def test_parent_alert_rejects_trigger_without_matching_condition(db):
+    student = db.query(Student).filter(Student.roll_no == "ENG-24-CSE-0412").one()
+    existing_log_count = db.query(NotificationLog).count()
+
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        client = TestClient(app)
+        fee_response = client.post(
+            "/api/notifications/send",
+            json={"student_id": student.id, "trigger_type": "FEE_DUE"},
+        )
+        attendance_response = client.post(
+            "/api/notifications/send",
+            json={"student_id": student.id, "trigger_type": "ATTENDANCE_SHORTAGE"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert fee_response.status_code == 409
+    assert attendance_response.status_code == 409
+    assert db.query(NotificationLog).count() == existing_log_count
+
+
+def test_parent_alert_returns_not_found_for_missing_student(db):
+    existing_log_count = db.query(NotificationLog).count()
+
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        response = TestClient(app).post(
+            "/api/notifications/send",
+            json={"student_id": 999999, "trigger_type": "FEE_DUE"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Student not found"
+    assert db.query(NotificationLog).count() == existing_log_count

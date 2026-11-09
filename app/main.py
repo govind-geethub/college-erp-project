@@ -409,6 +409,12 @@ def make_mock_payment(payload: MockPaymentRequest, db: Session = Depends(get_db)
     return fees_service.process_mock_payment(db, payload)
 
 
+@app.get("/api/fees/receipt/{receipt_no}")
+def get_fee_receipt(receipt_no: str, db: Session = Depends(get_db)):
+    """Retrieve the receipt details for a previously issued fee payment."""
+    return fees_service.get_payment_receipt(db, receipt_no)
+
+
 @app.get("/api/fees/export-tally-xml")
 def export_tally_xml(db: Session = Depends(get_db)):
     """Download Tally XML voucher import file."""

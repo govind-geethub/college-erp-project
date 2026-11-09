@@ -5,9 +5,9 @@ Tests for Mobile Attendance, Offline Sync Idempotency, and Shortage Alerts (<75%
 import pytest
 from datetime import date
 from sqlalchemy.orm import Session
-from app.models import AttendanceSession, Student, Subject, Batch, NotificationLog
+from app.models import AttendanceRecord, AttendanceSession, Student, Subject, Batch, NotificationLog
 from app.schemas import AttendanceBatchSubmit, AttendanceItem
-from app.services import attendance_service
+from app.services import attendance_service, report_service
 
 
 def test_attendance_marking_and_stats(db: Session):
@@ -19,8 +19,38 @@ def test_attendance_marking_and_stats(db: Session):
     assert "total" in stats
     assert "attended" in stats
     assert stats["total"] > 0
-    # Subhashree Mohanty baseline attendance around ~81.5%
-    assert 75.0 <= stats["percentage"] <= 90.0
+    assert stats["percentage"] == 81.5
+
+
+def test_benchmark_student_attendance_matches_seed_data(db: Session):
+    expected_attendance = {
+        "ENG-24-CSE-0412": 81.5,
+        "ENG-24-ME-0177": 68.2,
+        "MBA-25-0093": 92.0,
+    }
+
+    for roll_no, expected_percentage in expected_attendance.items():
+        student = db.query(Student).filter(Student.roll_no == roll_no).one()
+        stats = attendance_service.calculate_student_attendance(db, student.id)
+        assert stats["percentage"] == expected_percentage
+
+
+def test_seeded_attendance_sessions_are_counted_as_same_day_entries(db: Session):
+    kpi = report_service.get_kpi_dashboard_metrics(db)
+
+    assert kpi["kpi_same_day_attendance_rate"] == 100.0
+    assert kpi["kpi_attendance_success"] is True
+
+
+def test_same_day_attendance_kpi_is_zero_without_sessions(db: Session):
+    db.query(AttendanceRecord).delete()
+    db.query(AttendanceSession).delete()
+    db.commit()
+
+    kpi = report_service.get_kpi_dashboard_metrics(db)
+
+    assert kpi["kpi_same_day_attendance_rate"] == 0.0
+    assert kpi["kpi_attendance_success"] is False
 
 
 def test_offline_sync_idempotency(db: Session):

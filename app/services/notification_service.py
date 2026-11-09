@@ -5,9 +5,11 @@ as specified in the problem statement constraints.
 """
 
 from typing import List, Dict, Any
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models import NotificationLog, Student
 from app.services.attendance_service import calculate_student_attendance
+from app.config import settings
 
 
 def get_notification_logs(db: Session, limit: int = 50) -> List[Dict[str, Any]]:
@@ -43,13 +45,18 @@ def send_manual_parent_alert(
     """Manually dispatch or re-send bilingual parent notice."""
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
-        return {"status": "Error", "message": "Student not found"}
+        raise HTTPException(status_code=404, detail="Student not found")
 
     att_stats = calculate_student_attendance(db, student.id)
     pct = att_stats["percentage"]
     due = student.fee_ledger.due_amount if student.fee_ledger else 0.0
 
     if trigger_type == "ATTENDANCE_SHORTAGE":
+        if pct >= settings.MINIMUM_ATTENDANCE_PERCENTAGE:
+            raise HTTPException(
+                status_code=409,
+                detail="Student does not currently meet the attendance-shortage alert criteria",
+            )
         msg_en = (
             f"URGENT ATTENDANCE SHORTAGE: Your ward {student.name} ({student.roll_no}) has only "
             f"{pct}% attendance in Semester 3 (minimum required: 75.0%). Risk of university exam debarment. "
@@ -61,6 +68,11 @@ def send_manual_parent_alert(
             f"ତୁରନ୍ତ କଲେଜ ଅଫିସ ସହିତ ଯୋଗାଯୋଗ କରନ୍ତୁ: ୦୬୭୪-୨୩୯୧୦୦୦।"
         )
     else:
+        if due <= 0:
+            raise HTTPException(
+                status_code=409,
+                detail="Student does not currently have an outstanding fee balance",
+            )
         msg_en = (
             f"FEE REMINDER: Semester fee balance of ₹{due:,.0f} is pending for {student.name} ({student.roll_no}). "
             f"Please clear before the upcoming deadline. Payment link: https://portal.trust-erp.ac.in/pay"

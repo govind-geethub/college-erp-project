@@ -19,6 +19,18 @@ from app.models import (
 )
 
 
+def historical_class_dates(today: date, count: int, start_offset: int) -> list[date]:
+    """Return unique weekday dates well before the recent attendance sessions."""
+    dates = []
+    offset = start_offset
+    while len(dates) < count:
+        session_date = today - timedelta(days=offset)
+        if session_date.weekday() != 6:
+            dates.append(session_date)
+        offset += 1
+    return dates
+
+
 def seed_database(db: Session):
     """Populate database with complete multi-campus college ERP seed data."""
     # Check if already seeded
@@ -656,6 +668,7 @@ def seed_database(db: Session):
             batch_id=batch_cse_y2.id,
             faculty_id=faculty_ramesh.id,
             session_date=sess_date,
+            created_at=datetime.combine(sess_date, datetime.min.time(), tzinfo=timezone.utc),
             period=1,
             total_students=len(cse_students),
             sync_status="Synced",
@@ -691,6 +704,41 @@ def seed_database(db: Session):
 
         session.present_count = present_count
         session.absent_count = absent_count
+
+    for class_index, sess_date in enumerate(historical_class_dates(today, 98, 500)):
+        session = AttendanceSession(
+            subject_id=subj_dsa.id,
+            batch_id=batch_cse_y2.id,
+            faculty_id=faculty_ramesh.id,
+            session_date=sess_date,
+            created_at=datetime.combine(sess_date, datetime.min.time(), tzinfo=timezone.utc),
+            period=1,
+            total_students=len(cse_students),
+            present_count=0,
+            absent_count=0,
+            sync_status="Synced",
+            client_batch_id=f"HIST-DSA-{class_index + 1:03d}"
+        )
+        db.add(session)
+        db.flush()
+
+        present_count = 0
+        absent_count = 0
+        for stud in cse_students:
+            if stud.id == s1.id:
+                status = "Present" if class_index < 80 else "Absent"
+            elif stud.id == s6.id:
+                status = "Present" if class_index < 69 else "Absent"
+            else:
+                status = "Present"
+            db.add(AttendanceRecord(session_id=session.id, student_id=stud.id, status=status))
+            if status == "Present":
+                present_count += 1
+            else:
+                absent_count += 1
+
+        session.present_count = present_count
+        session.absent_count = absent_count
     
     # Also add sessions for Mechanical (Ankit Panda)
     for day_offset in range(12, 0, -1):
@@ -702,6 +750,7 @@ def seed_database(db: Session):
             batch_id=batch_me_y2.id,
             faculty_id=faculty_sahoo.id,
             session_date=sess_date,
+            created_at=datetime.combine(sess_date, datetime.min.time(), tzinfo=timezone.utc),
             period=2,
             total_students=1,
             present_count=1 if day_offset not in [1, 3, 6, 9] else 0,
@@ -717,6 +766,52 @@ def seed_database(db: Session):
             status="Present" if day_offset not in [1, 3, 6, 9] else "Absent"
         )
         db.add(rec_me)
+
+    for class_index, sess_date in enumerate(historical_class_dates(today, 97, 700)):
+        is_present = class_index < 66
+        session = AttendanceSession(
+            subject_id=subj_fm.id,
+            batch_id=batch_me_y2.id,
+            faculty_id=faculty_sahoo.id,
+            session_date=sess_date,
+            created_at=datetime.combine(sess_date, datetime.min.time(), tzinfo=timezone.utc),
+            period=2,
+            total_students=1,
+            present_count=1 if is_present else 0,
+            absent_count=0 if is_present else 1,
+            sync_status="Synced",
+            client_batch_id=f"HIST-FM-{class_index + 1:03d}"
+        )
+        db.add(session)
+        db.flush()
+        db.add(AttendanceRecord(
+            session_id=session.id,
+            student_id=s2.id,
+            status="Present" if is_present else "Absent"
+        ))
+
+    for class_index, sess_date in enumerate(historical_class_dates(today, 100, 900)):
+        is_present = class_index < 92
+        session = AttendanceSession(
+            subject_id=subj_mba_eco.id,
+            batch_id=batch_mba_y1.id,
+            faculty_id=faculty_priya.id,
+            session_date=sess_date,
+            created_at=datetime.combine(sess_date, datetime.min.time(), tzinfo=timezone.utc),
+            period=3,
+            total_students=1,
+            present_count=1 if is_present else 0,
+            absent_count=0 if is_present else 1,
+            sync_status="Synced",
+            client_batch_id=f"HIST-MBA-{class_index + 1:03d}"
+        )
+        db.add(session)
+        db.flush()
+        db.add(AttendanceRecord(
+            session_id=session.id,
+            student_id=s3.id,
+            status="Present" if is_present else "Absent"
+        ))
 
     # 13. At-Risk Flag & Mentor Task for Ankit Panda (Screen 2 & 6 requirements)
     risk_flag_ankit = AtRiskFlag(

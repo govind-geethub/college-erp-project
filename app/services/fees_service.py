@@ -110,6 +110,28 @@ def process_mock_payment(db: Session, payload: MockPaymentRequest) -> Dict[str, 
     }
 
 
+def get_payment_receipt(db: Session, receipt_no: str) -> Dict[str, Any]:
+    """Retrieve the receipt details for an issued fee payment."""
+    payment = db.query(FeePayment).filter(FeePayment.receipt_no == receipt_no).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Fee receipt not found")
+
+    student = payment.ledger.student
+    return {
+        "receipt_no": payment.receipt_no,
+        "transaction_ref": payment.transaction_ref,
+        "tally_voucher_no": payment.tally_voucher_no,
+        "student_id": payment.student_id,
+        "student_name": student.name,
+        "roll_no": student.roll_no,
+        "amount_paid": payment.amount,
+        "payment_mode": payment.payment_mode,
+        "payment_date": payment.payment_date.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "remarks": payment.remarks,
+        "is_reconciled": payment.is_reconciled,
+    }
+
+
 def generate_tally_xml_export(db: Session) -> str:
     """
     Generate Tally ERP 9 / TallyPrime XML import payload for seamless accounting reconciliation.
