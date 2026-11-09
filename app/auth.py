@@ -71,10 +71,7 @@ def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    """
-    Dependency to resolve the authenticated user from the Bearer token.
-    Resolve the authenticated user from a JWT or explicitly enabled local demo mode.
-    """
+    """Resolve the authenticated user from a JWT or explicitly enabled local demo mode."""
     if not credentials:
         if settings.DEMO_AUTH_ENABLED and settings.ENVIRONMENT.lower() != "production":
             user = db.query(User).filter(User.username == "admin").first()
