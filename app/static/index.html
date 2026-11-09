@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prerana College ERP | Company A Trust, Bhubaneswar</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Prerana ERP&quot;,&quot;short_name&quot;:&quot;CollegeERP&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;}">
+</head>
+<body>
+
+  <!-- Top Global Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo-mark">A</div>
+      <div class="brand-text">
+        <h1>Company A Educational Trust</h1>
+        <p>Bhubaneswar Engineering Campus &bull; ERP Phase 1</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- Network Connectivity & Offline Sync Badge -->
+      <div id="network-status-badge" class="status-pill online">
+        <span class="status-dot online"></span>
+        <span>Online</span>
+      </div>
+
+      <!-- Quick Offline Toggle for Evaluator -->
+      <button id="btn-toggle-offline" class="btn btn-secondary btn-sm" title="Simulate classroom weak Wi-Fi">
+        📶 Sim Offline
+      </button>
+
+      <!-- Active Role Switcher -->
+      <div class="role-badge-box">
+        <label>Role:</label>
+        <select id="role-switcher" class="role-select">
+          <option value="office_admin">Office Admin (Pradeep Das)</option>
+          <option value="faculty" selected>Faculty (Dr. Ramesh Patra)</option>
+          <option value="exam_moderator">Exam Moderator (Prof. M. Mishra)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="nav-group-title">Core ERP</div>
+      <a class="nav-item active" data-screen="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a class="nav-item" data-screen="attendance">
+        <span class="icon">📱</span> Mobile Attendance
+      </a>
+      <a class="nav-item" data-screen="marks">
+        <span class="icon">📝</span> Internal Marks
+      </a>
+      <a class="nav-item" data-screen="fees">
+        <span class="icon">💳</span> Fee Dues & Tally
+      </a>
+
+      <div class="nav-group-title">Intelligence & Masters</div>
+      <a class="nav-item" data-screen="ai">
+        <span class="icon">🤖</span> AI Query & Risk <span id="nav-risk-count" class="nav-badge">2</span>
+      </a>
+      <a class="nav-item" data-screen="students">
+        <span class="icon">👥</span> Student Directory
+      </a>
+      <a class="nav-item" data-screen="masters">
+        <span class="icon">🏛️</span> Academic Masters
+      </a>
+      <a class="nav-item" data-screen="reports">
+        <span class="icon">📑</span> Compliance & Odia
+      </a>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="main-content">
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 1: DASHBOARD -->
+      <!-- ============================================================= -->
+      <section id="screen-dashboard" class="screen active">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Executive & Faculty Dashboard</h2>
+            <p class="page-subtitle">Bhubaneswar Engineering Campus &bull; Academic Year 2024–2026</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary btn-sm" onclick="App.navigateTo('attendance')">Take Attendance (&lt;30s)</button>
+            <button class="btn btn-secondary btn-sm" onclick="App.navigateTo('ai')">Ask AI Assistant</button>
+          </div>
+        </div>
+
+        <!-- Problem Statement KPI Success Benchmarks -->
+        <div class="grid-4">
+          <div class="stat-box">
+            <div class="stat-label">Same-Day Attendance</div>
+            <div id="stat-attendance-rate" class="stat-val positive">96.4%</div>
+            <div class="stat-desc">Target &gt;95% (Met) &bull; 0 paper logs</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Fee Reconciliation</div>
+            <div class="stat-val positive">1 Day</div>
+            <div class="stat-desc">Reduced from 10 days via Tally XML</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">At-Risk Students</div>
+            <div id="stat-risk-count" class="stat-val negative">2 Flagged</div>
+            <div class="stat-desc">&lt;75% Attendance or low marks</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">DPDP 2023 Minor Audits</div>
+            <div class="stat-val">100%</div>
+            <div class="stat-desc">Parental consent verified</div>
+          </div>
+        </div>
+
+        <!-- Automated Shortage & Fee Alerts -->
+        <div class="card">
+          <div class="card-title">
+            <span>Automated Shortage Alerts & Fee Reminders</span>
+            <span class="badge badge-warning">Fixed Rules Triggered</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Programme</th>
+                  <th>Attendance %</th>
+                  <th>Internal Marks (40)</th>
+                  <th>Fee Due</th>
+                  <th>Trigger Reason</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-alerts-body">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 2: MASTERS MANAGEMENT -->
+      <!-- ============================================================= -->
+      <section id="screen-masters" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Campus & Academic Masters</h2>
+            <p class="page-subtitle">One campus slice: Programmes, Batches, Subjects &amp; Faculty mappings</p>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Programmes (Bhubaneswar)</div>
+            <ul id="masters-programmes-list" style="list-style: none; font-size: 13px;">
+              <!-- Injected -->
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-title">Active Batches</div>
+            <ul id="masters-batches-list" style="list-style: none; font-size: 13px;">
+              <!-- Injected -->
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-title">Subjects & Credits (40 Max Internal)</div>
+            <ul id="masters-subjects-list" style="list-style: none; font-size: 13px;">
+              <!-- Injected -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 3: MOBILE-FIRST ATTENDANCE (OFFLINE SYNC, <30 SECONDS) -->
+      <!-- ============================================================= -->
+      <section id="screen-attendance" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">In-Class Attendance (Mobile-First)</h2>
+            <p class="page-subtitle">Engineered for weak classroom Wi-Fi &bull; Takes under 30 seconds</p>
+          </div>
+          <div class="page-actions">
+            <button id="btn-sync-queue" class="btn btn-secondary btn-sm" onclick="App.syncOfflineQueue()">
+              🔄 Sync Offline Queue (<span id="offline-queue-count">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Session Selector & Quick Actions -->
+        <div class="quick-attendance-panel">
+          <div>
+            <label class="form-label">Subject</label>
+            <select id="att-subject-select" class="form-control" style="width: 220px;" onchange="App.loadRosterForAttendance()">
+              <option value="1">CS301 - Data Structures</option>
+              <option value="3">ME301 - Fluid Mechanics</option>
+              <option value="4">MBA101 - Managerial Economics</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" id="att-session-date" class="form-control" style="width: 140px;">
+          </div>
+
+          <div>
+            <label class="form-label">Period</label>
+            <select id="att-period-select" class="form-control" style="width: 90px;">
+              <option value="1">Period 1</option>
+              <option value="2">Period 2</option>
+              <option value="3">Period 3</option>
+            </select>
+          </div>
+
+          <div style="margin-left: auto; display: flex; gap: 8px; align-items: flex-end;">
+            <button class="btn btn-secondary" onclick="App.markAllPresent()">
+              ✓ Mark All Present (1-Tap)
+            </button>
+            <button class="btn btn-primary" onclick="App.submitAttendanceSession()">
+              💾 Save Attendance
+            </button>
+          </div>
+        </div>
+
+        <!-- Fast Attendance Roster (<30 seconds roll call) -->
+        <div class="card">
+          <div class="card-title">
+            <span>Student Class Roster</span>
+            <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">
+              Tap status to toggle Present / Absent / Late
+            </span>
+          </div>
+
+          <div id="attendance-roster-container">
+            <!-- Dynamically populated with fast tap controls -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 4: INTERNAL MARKS & MODERATION LOCK (OUT OF 40) -->
+      <!-- ============================================================= -->
+      <section id="screen-marks" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Internal Marks &amp; Moderation Lock</h2>
+            <p class="page-subtitle">40-mark component breakdown &bull; Tamper-evident exam audit trail &bull; BPUT format export</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" onclick="App.exportUniversityCSV()">
+              📥 Export University Upload CSV
+            </button>
+            <button id="btn-toggle-lock" class="btn btn-primary btn-sm" onclick="App.handleModerationAction()">
+              🔒 Moderation Lock / Unlock
+            </button>
+          </div>
+        </div>
+
+        <!-- Course Selector & Status Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <label class="form-label" style="margin: 0;">Select Subject:</label>
+            <select id="marks-subject-select" class="form-control" style="width: 260px;" onchange="App.loadMarksSheet()">
+              <option value="1">CS301 - Data Structures (Sem 3)</option>
+              <option value="3">ME301 - Fluid Mechanics (Sem 3)</option>
+              <option value="4">MBA101 - Managerial Economics (Sem 1)</option>
+            </select>
+          </div>
+          <div id="marks-moderation-badge" class="badge badge-success">
+            Moderated &amp; Locked
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Midterm (20)</th>
+                  <th>Quiz (10)</th>
+                  <th>Assignment (10)</th>
+                  <th>Total (40)</th>
+                  <th>Status</th>
+                  <th>Audit</th>
+                </tr>
+              </thead>
+              <tbody id="marks-sheet-body">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+            <button id="btn-save-marks" class="btn btn-primary" onclick="App.saveMarksSheet()">
+              Save Mark Revisions
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 5: FEE DUES, RECONCILIATION & TALLY EXPORT -->
+      <!-- ============================================================= -->
+      <section id="screen-fees" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Fee Dues &amp; Tally Accounting Reconciliation</h2>
+            <p class="page-subtitle">Monthly reconciliation from 10 days to 1 day &bull; Test mode simulated payment links</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" onclick="App.exportTallyXML()">
+              📄 Export Tally XML (Vouchers)
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="App.exportFeeCSV()">
+              📥 Export Ledger CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Programme</th>
+                  <th>Total Fee</th>
+                  <th>Scholarship/TFW</th>
+                  <th>Net Payable</th>
+                  <th>Paid</th>
+                  <th>Fee Due</th>
+                  <th>Status</th>
+                  <th>Reconciliation</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="fees-ledger-body">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 6: AI ASSISTANT & AT-RISK ENGINE -->
+      <!-- ============================================================= -->
+      <section id="screen-ai" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Office Staff AI Assistant &amp; Early Intervention</h2>
+            <p class="page-subtitle">Plain-English read-only query generator with filter trace &bull; At-risk student mentor tasks</p>
+          </div>
+        </div>
+
+        <!-- Plain English Query Bar -->
+        <div class="ai-search-box">
+          <div class="ai-input-row">
+            <span style="font-size: 18px;">🔍</span>
+            <input type="text" id="ai-query-input" class="ai-input" placeholder="Ask questions in plain English (e.g. how many second-year students are below 75% this month?)...">
+            <button class="btn btn-primary" onclick="App.executeAIQuery()">Run Query</button>
+          </div>
+          <div class="sample-queries">
+            <span style="font-size: 11px; color: var(--text-muted); align-self: center;">Try asking:</span>
+            <span class="query-chip" onclick="App.setAIQuery('how many second-year students are below 75% this month?')">
+              how many second-year students are below 75% this month?
+            </span>
+            <span class="query-chip" onclick="App.setAIQuery('show students with fee dues above 30000')">
+              show students with fee dues above 30000
+            </span>
+            <span class="query-chip" onclick="App.setAIQuery('which students have internal marks below 24?')">
+              which students have internal marks below 24?
+            </span>
+            <span class="query-chip" onclick="App.setAIQuery('DELETE FROM students WHERE id = 1')">
+              DELETE FROM students (Test Safety Guardrail)
+            </span>
+          </div>
+        </div>
+
+        <!-- AI Query Response Card & Filter Trace -->
+        <div id="ai-response-container" style="display: none;">
+          <div class="ai-meta-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span id="ai-safety-badge" class="badge badge-success">PASSED (Read-only verified)</span>
+              <span id="ai-execution-stats" style="font-size: 12px; color: var(--text-muted);">0 rows &bull; 0ms</span>
+            </div>
+            <div id="ai-interpretation" style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;"></div>
+            <div id="ai-filter-summary" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;"></div>
+            
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-subtle); margin-top: 6px;">Generated Safe SQL:</div>
+            <pre id="ai-sql-code" class="code-block"></pre>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Query Results</div>
+            <div class="table-container">
+              <table id="ai-results-table">
+                <thead id="ai-results-head"></thead>
+                <tbody id="ai-results-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI At-Risk Student Flags & Mentor Intervention Tasks -->
+        <div class="card" style="margin-top: 24px;">
+          <div class="card-title">
+            <span>At-Risk Students &amp; Automated Mentor Tasks</span>
+            <button class="btn btn-secondary btn-sm" onclick="App.triggerRiskScan()">Re-Scan Risk Indicators</button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            Fixed rule: AI flags students from attendance and marks trends and creates a mentor task. It strictly cannot change grades or records.
+          </p>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Risk Level</th>
+                  <th>Risk Score</th>
+                  <th>Triggers Detected</th>
+                  <th>Assigned Mentor Task</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="at-risk-table-body">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 7: COMPLIANCE, NAAC, AICTE & ODIA PARENT NOTICES -->
+      <!-- ============================================================= -->
+      <section id="screen-reports" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Compliance Reports &amp; Bilingual Odia Notices</h2>
+            <p class="page-subtitle">NAAC Criterion 2, AICTE mandatory disclosure, and English + Odia parent messaging</p>
+          </div>
+        </div>
+
+        <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- NAAC Metric Card -->
+          <div class="card">
+            <div class="card-title">NAAC Criterion II: Evaluation Transparency</div>
+            <div id="naac-metrics-list" style="font-size: 13px;">
+              <!-- Injected -->
+            </div>
+          </div>
+
+          <!-- AICTE Disclosure Card -->
+          <div class="card">
+            <div class="card-title">AICTE Mandatory Disclosure</div>
+            <div id="aicte-disclosure-list" style="font-size: 13px;">
+              <!-- Injected -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bilingual Parent Notification Center -->
+        <div class="card">
+          <div class="card-title">
+            <span>Bilingual Parent Shortage Alerts (English &amp; Odia)</span>
+            <span class="badge badge-neutral">SMS / WhatsApp Dispatch</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student &amp; Roll No</th>
+                  <th>Parent Phone</th>
+                  <th>Channel</th>
+                  <th>English SMS Template</th>
+                  <th>Odia (ଓଡ଼ିଆ) SMS Template</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="notifications-table-body">
+                <!-- Injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================= -->
+      <!-- SCREEN 8: STUDENT DIRECTORY & DPDP ACT 2023 -->
+      <!-- ============================================================= -->
+      <section id="screen-students" class="screen">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Student Records &amp; DPDP Act 2023 Consent</h2>
+            <p class="page-subtitle">One system where a student exists once, from admission to graduation</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Programme</th>
+                  <th>Year</th>
+                  <th>Att %</th>
+                  <th>Marks (40)</th>
+                  <th>Fee Due</th>
+                  <th>DPDP 2023 Minor Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="students-directory-body">
+                <!-- Injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal: Mock Payment & Instant Receipt -->
+  <div id="payment-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Simulated Fee Payment (Test Mode)</h3>
+        <button class="btn btn-secondary btn-sm" onclick="App.closeModal('payment-modal')">✕</button>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">Student</label>
+          <input type="text" id="modal-student-name" class="form-control" readonly>
+          <input type="hidden" id="modal-student-id">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Outstanding Due (₹)</label>
+          <input type="text" id="modal-due-amount" class="form-control" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Amount to Settle (₹)</label>
+          <input type="number" id="modal-pay-amount" class="form-control" value="45000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mode</label>
+          <select id="modal-pay-mode" class="form-control">
+            <option value="UPI_MOCK">Instant UPI (Mock)</option>
+            <option value="NETBANKING_MOCK">NetBanking (Mock)</option>
+            <option value="BANK_COUNTER">Bank Counter Cash / DD</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="App.submitMockPayment()">
+          Confirm Payment &amp; Generate Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Exam Audit Log -->
+  <div id="audit-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Exam Tamper-Evident Audit Trail</h3>
+        <button class="btn btn-secondary btn-sm" onclick="App.closeModal('audit-modal')">✕</button>
+      </div>
+      <div id="audit-log-content" style="font-size: 13px;">
+        <!-- Injected -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Client-side Scripts -->
+  <script src="/static/js/offline_sync.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.warn);
+    }
+  </script>
+</body>
+</html>
