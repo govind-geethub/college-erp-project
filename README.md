@@ -1,6 +1,6 @@
 # Prerana College ERP — Multi-Campus Higher Education Management System
 
-[![Build & Test Status](https://img.shields.io/badge/tests-21%20passed-success)](tests/)
+[![Build & Test Status](https://img.shields.io/badge/tests-23%20passed-success)](tests/)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.138-teal)](https://fastapi.tiangolo.com/)
 [![License: Proprietary](https://img.shields.io/badge/license-Educational%20Trust-orange)]()

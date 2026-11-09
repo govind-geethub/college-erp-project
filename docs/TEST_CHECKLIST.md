@@ -13,7 +13,7 @@ python -m pytest -v
 
 ### Expected Output
 ```
-collected 21 items
+collected 23 items
 
 tests/test_ai_assistant_safety.py::test_plain_english_query_attendance_shortage PASSED
 tests/test_ai_assistant_safety.py::test_plain_english_query_fee_dues PASSED
@@ -36,8 +36,10 @@ tests/test_marks_moderation_audit.py::test_internal_marks_bounds_and_calculation
 tests/test_marks_moderation_audit.py::test_internal_marks_bounds_exceeded_fails PASSED
 tests/test_marks_moderation_audit.py::test_locked_marks_cannot_be_modified PASSED
 tests/test_marks_moderation_audit.py::test_university_csv_export_format PASSED
+tests/test_notifications.py::test_parent_alert_json_request_is_recorded PASSED
+tests/test_notifications.py::test_parent_alert_rejects_unsupported_trigger PASSED
 
-============================= 21 passed ==============================
+============================= 23 passed ==============================
 ```
 
 ---

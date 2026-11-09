@@ -6,7 +6,7 @@
 
 ## 1. Executive Status
 - **Current State**: Phase 1 Core Build is 100% complete and fully verified.
-- **Test Suite**: 21 / 21 automated tests passing (`pytest -v`).
+- **Test Suite**: 23 / 23 automated tests passing (`pytest -v`).
 - **Target Audience**: Company A Educational Trust (Bhubaneswar, Odisha) & Evaluation Reviewers.
 - **Key Modules Shipped**:
   1. Masters for 1 Campus slice (Bhubaneswar Engineering College, 3 Programmes, Batches, Subjects).
@@ -30,7 +30,7 @@
 - [x] At-Risk Early Warning Engine (`app/services/at_risk_engine.py`).
 - [x] Service Worker PWA Caching (`app/static/sw.js`).
 - [x] Responsive, calm UI frontend (`app/static/index.html`, `app/static/css/style.css`, `app/static/js/app.js`, `app/static/js/offline_sync.js`).
-- [x] 21 hermetic unit and integration tests (`tests/`).
+- [x] 23 hermetic unit and integration tests (`tests/`).
 
 ---
 
@@ -44,7 +44,7 @@
 
 ## 4. Five-Line Session Handoff Summary
 1. **Accomplished**: Built full multi-campus slice ERP end-to-end with 8 polished screens, offline PWA attendance, marks moderation audit, Tally XML export, and plain-English AI assistant.
-2. **Current Status**: All 21 automated tests passing; database seeded with exact benchmark student records.
+2. **Current Status**: All 23 automated tests passing; database seeded with benchmark student records.
 3. **Verified Logic**: Offline sync idempotency, moderation locking preventing mark tampering, and safety guardrails blocking SQL mutation.
 4. **Immediate Next Step**: Maintain the repository and rerun tests before changes are published.
 5. **Watch Out**: Keep `college_erp.db` out of git; rely on automated on-boot seeding.

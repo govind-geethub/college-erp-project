@@ -828,12 +828,20 @@ const App = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, trigger_type: triggerType })
       });
-      if (res.ok) {
-        this.showToast('Dispatched bilingual SMS (English + Odia) to parent phone.');
-        this.loadReportsData();
+      if (!res.ok) {
+        const errorData = await res.json();
+        const detail = Array.isArray(errorData.detail)
+          ? errorData.detail.map(error => error.msg).join(', ')
+          : errorData.detail;
+        this.showToast(`Alert dispatch failed: ${detail || `HTTP ${res.status}`}`);
+        return;
       }
+
+      this.showToast('Mock bilingual parent notification recorded (English + Odia).');
+      this.loadReportsData();
     } catch (e) {
-      alert('Alert dispatch failed');
+      console.error('Parent alert dispatch error:', e);
+      this.showToast(`Alert dispatch failed: ${e.message}`);
     }
   },
 

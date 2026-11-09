@@ -260,6 +260,11 @@ class MentorTaskOut(BaseModel):
 
 
 # --- Notification Schemas ---
+class NotificationSendRequest(BaseModel):
+    student_id: int
+    trigger_type: str = Field(default="ATTENDANCE_SHORTAGE", pattern="^(ATTENDANCE_SHORTAGE|FEE_DUE)$")
+
+
 class NotificationPreviewOut(BaseModel):
     student_id: int
     student_name: str

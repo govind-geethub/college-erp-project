@@ -24,7 +24,8 @@ from app.schemas import (
     LoginRequest, TokenResponse, UserOut, CampusOut, ProgrammeOut, BatchOut,
     SubjectOut, StudentOut, StudentDetailOut, AttendanceBatchSubmit,
     AttendanceSessionOut, BatchMarksUpdate, ModerationLockRequest,
-    MockPaymentRequest, AIQueryRequest, AIQueryResponse, MentorTaskOut
+    MockPaymentRequest, AIQueryRequest, AIQueryResponse, MentorTaskOut,
+    NotificationSendRequest
 )
 from app.auth import (
     verify_password, hash_password, create_access_token, get_current_user, require_role
@@ -516,11 +517,10 @@ def get_notifications(db: Session = Depends(get_db)):
 
 @app.post("/api/notifications/send")
 def trigger_notification(
-    student_id: int,
-    trigger_type: str = "ATTENDANCE_SHORTAGE",
+    payload: NotificationSendRequest,
     db: Session = Depends(get_db)
 ):
-    return notification_service.send_manual_parent_alert(db, student_id, trigger_type)
+    return notification_service.send_manual_parent_alert(db, payload.student_id, payload.trigger_type)
 
 
 # ============================================================================
