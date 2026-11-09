@@ -1,107 +1,108 @@
-# Deployment & Reviewer Evaluation Guide
-## Multi-Campus College ERP (Company A Educational Trust, Bhubaneswar)
+# Deployment and Reviewer Guide
 
----
+## Project links
 
-## 1. Quick Start / How to Run Locally, Step by Step
+- **GitHub repository:** https://github.com/govind-geethub/college-erp-project
+- **Live application:** Not deployed publicly. Run it locally using the steps below; a localhost address is not accessible to reviewers remotely.
 
-### Prerequisites
-- Python 3.10+ (Developed and verified on Python 3.13)
-- Modern web browser (Chrome, Edge, Firefox, or Safari)
+## Prerequisites
+
+- Python 3.10 or newer
 - Git
+- A modern web browser
 
-### Step-by-Step Instructions
+## Run locally (Windows PowerShell)
 
-1. **Clone the Repository**:
-   ```bash
+1. Clone the public repository and enter its folder:
+
+   ```powershell
    git clone https://github.com/govind-geethub/college-erp-project.git
-   cd college-erp-project
+   Set-Location college-erp-project
    ```
 
-2. **Install dependencies and run the application**:
-   ```bash
+2. Create and activate a virtual environment:
+
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+3. Install project dependencies:
+
+   ```powershell
    python -m pip install -r requirements.txt
    ```
 
-   Copy `.env.example` to `.env`, then replace the placeholder JWT secret and demo passwords with private values. The `.env` file is ignored by Git and must not be committed.
+4. Configure local demo access if desired. Copy `.env.example` to `.env` and set private values for `JWT_SECRET` and the demo password variables. Do not commit `.env` or share its secret values. Demo no-token access is only enabled when configured for a non-production environment.
+
    ```powershell
    Copy-Item .env.example .env
-   # Edit .env, then:
+   ```
+
+5. Start the server:
+
+   ```powershell
    python run.py
    ```
 
-   Database schema and benchmark seed data are created automatically on startup.
-   For a non-demo run, leave `DEMO_AUTH_ENABLED` unset and authenticate through `/api/auth/login`.
-   ```bash
-   # Optional alternative:
-   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-   ```
+6. Open `http://127.0.0.1:8000/`. On first startup, the application creates the schema and seeds synthetic demonstration data.
 
-3. **Open the Application**:
-   Navigate to your browser:
-   ```
-   http://127.0.0.1:8000
-   ```
+7. Run tests in a separate terminal from the repository folder:
 
-4. **Run the Automated Test Suite**:
-   To run the automated unit and integration tests:
-   ```bash
+   ```powershell
    python -m pytest -v
    ```
 
----
+To stop the local server, press **Ctrl+C** in the terminal running it.
 
-## 2. Demo Login Details for Reviewer
+## Deployment status and production considerations
 
-The system seeds three demo roles. Set private passwords with `DEMO_ADMIN_PASSWORD`, `DEMO_FACULTY_PASSWORD`, and `DEMO_MODERATOR_PASSWORD` in `.env`; do not commit those values.
+This submission provides a local application and does not include a public hosting environment, deployment pipeline, production database, or live external integrations. For a real deployment, configure a production ASGI server and managed database, use TLS and a stable private signing secret, disable demo authentication, and define server-side role permissions and operational backup/monitoring procedures. These production steps have not been provisioned or verified as part of this submission.
 
-| Role | Username | Purpose & Scope |
-|---|---|---|---|
-| **Office Admin** | `admin` | Full campus administration: AI plain-English query assistant, fee collection, Tally XML export, DPDP Act 2023 consent inspections, NAAC & AICTE reports. |
-| **Faculty (Teacher)** | `faculty` | Dr. Ramesh Chandra Patra (CSE): In-class mobile attendance, offline sync queue, draft internal marks entry. |
-| **Exam Moderator** | `moderator` | Prof. Minati Mishra: Moderation lock/unlock verification, tamper-evident audit logs, university BPUT CSV export. |
+## Environment variable names
 
-> **Tip for Reviewers**: You can switch roles instantly in real time using the **"Role:"** dropdown in the top navigation bar without re-logging in.
+The application reads configuration from its environment and, when present, `.env`. Variable names below are listed without secret values:
 
----
+- `ENVIRONMENT`
+- `DEBUG`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_ALGORITHM`
+- `ACCESS_TOKEN_EXPIRE_MINUTES`
+- `DEMO_AUTH_ENABLED`
+- `DEMO_ADMIN_PASSWORD`
+- `DEMO_FACULTY_PASSWORD`
+- `DEMO_MODERATOR_PASSWORD`
+- `DEFAULT_CAMPUS_CODE`
+- `DEFAULT_CAMPUS_NAME`
+- `DEFAULT_TRUST_NAME`
+- `MINIMUM_ATTENDANCE_PERCENTAGE`
+- `INTERNAL_MARKS_MAX`
+- `INTERNAL_PASS_THRESHOLD`
+- `DPDP_MINOR_AGE_THRESHOLD`
+- `DPDP_AUDIT_LOGGING_ENABLED`
+- `ENABLE_ODIA_NOTIFICATIONS`
+- `HOST`
+- `PORT`
 
-## 3. Deployment Guide & Environment Variables
+Use private values for secrets and passwords. Do not add them to this document, the ZIP, or the public repository. Demo access is disabled in production even if `DEMO_AUTH_ENABLED` is set.
 
-### Production Deployment (e.g. AWS EC2 / DigitalOcean / Docker / Render)
+## Reviewer demo accounts
 
-To run the application in a production environment:
+The seed data creates these account usernames:
 
-1. **Production Process Manager**:
-   Run with Gunicorn using Uvicorn worker threads:
-   ```bash
-   gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
-   ```
+| Username | Seeded role | Intended review areas |
+|---|---|---|
+| `admin` | Office administrator | Dashboard, AI query, fees, reports, and student records |
+| `faculty` | Faculty | Attendance and marks entry |
+| `moderator` | Exam moderator | Marks moderation, audit history, and university CSV export |
 
-2. **Environment Variables**:
-   In strict accordance with security guidelines, here are the environment variable **names only** (never commit secret values to source control):
+Passwords are not embedded in the repository or submission. Set private values through `DEMO_ADMIN_PASSWORD`, `DEMO_FACULTY_PASSWORD`, and `DEMO_MODERATOR_PASSWORD` in a local ignored `.env` file. The browser role selector is a demonstration UI control, not a server-side authentication or authorization mechanism. For a deployment with demo access disabled, obtain an API token using `/api/auth/login` with a configured seeded account.
 
-   - `ENVIRONMENT`: Set to `production` or `development`.
-   - `DEBUG`: Boolean flag (`true` / `false`).
-   - `PORT`: Network port for the server (defaults to `8000`).
-   - `HOST`: Host IP binding (defaults to `0.0.0.0` in production).
-   - `DATABASE_URL`: Connection string for production database (e.g., PostgreSQL / RDS).
-   - `JWT_SECRET`: Secret cryptographic key for signing user session tokens.
-   - `JWT_ALGORITHM`: Cryptographic signing algorithm (defaults to `HS256`).
-   - `ACCESS_TOKEN_EXPIRE_MINUTES`: Expiry duration for authentication tokens.
-   - `DEMO_AUTH_ENABLED`: Local review-only no-token demo access. Keep unset or `false` in production; demo access is disabled when `ENVIRONMENT=production`.
-   - `DEMO_ADMIN_PASSWORD`, `DEMO_FACULTY_PASSWORD`, `DEMO_MODERATOR_PASSWORD`: Private demo-user passwords. Set them in an ignored `.env` file and never commit the file.
-   - `MINIMUM_ATTENDANCE_PERCENTAGE`: Fixed institutional attendance threshold (75.0%).
-   - `INTERNAL_MARKS_MAX`: Maximum ceiling for internal marks (40.0).
-   - `DPDP_MINOR_AGE_THRESHOLD`: Age of majority threshold under DPDP Act 2023 (18).
-   - `DPDP_AUDIT_LOGGING_ENABLED`: Flag enabling audit logging for student records (`true`).
-   - `ENABLE_ODIA_NOTIFICATIONS`: Flag enabling dual-script Odia script SMS notifications (`true`).
+## Prototype limitations
 
----
-
-## 4. Benchmark Student Records to Inspect
-
-The reviewer can immediately inspect the three required benchmark records from the brief:
-
-1. **Subhashree Mohanty** (`ENG-24-CSE-0412`): B.Tech CSE, Year 2 &bull; Attendance: 81.5% &bull; Internal Marks: 33/40 &bull; Fee Due: ₹0.
-2. **Ankit Panda** (`ENG-24-ME-0177`): B.Tech Mechanical, Year 2 &bull; Attendance: 68.2% &bull; Internal Marks: 21/40 &bull; Fee Due: ₹45,000 &bull; **Flagged HIGH RISK** &bull; Automated Mentor Task assigned.
-3. **Farheen Ali** (`MBA-25-0093`): MBA, Year 1 &bull; Attendance: 92.0% &bull; Internal Marks: 36/40 &bull; Fee Due: ₹0.
+- Mock payment requests update the local demonstration ledger; they do not process money.
+- Parent notification records are mock dispatches; no SMS or WhatsApp message is sent.
+- Tally exports are generated files; there is no live Tally connection.
+- Query interpretation and risk scoring use application rules; no generative AI service is called.
+- Seed records are synthetic demonstration data, not verified real people or production records.

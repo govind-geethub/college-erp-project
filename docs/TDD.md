@@ -1,204 +1,128 @@
-# Technical Design Document (TDD)
-## Multi-Campus College ERP: Admissions, Attendance, Marks & Fees (Phase 1 Core Build)
+**Project repository:** https://github.com/govind-geethub/college-erp-project
+**Public application URL:** Not deployed. The application is available only when run locally.
 
-**Client**: Company A Educational Trust, Bhubaneswar  
-**GitHub Repository**: `https://github.com/govind-geethub/college-erp-project` *(Public Repository)*  
-**Live Application URL**: `http://localhost:8000` *(Local Deployment / Evaluator Live Demo)*  
-**Author**: Lead Software Engineer Candidate  
-**Submission**: One ZIP file containing `Technical_Design_Document.docx` (and PDF) + `deployment.md`  
+# Technical Design Document
 
----
+**Project:** College ERP, Phase 1 single-campus slice
 
-## 1. Executive Summary & Context
+## 1. Purpose and scope
 
-Company A Educational Trust in Bhubaneswar, Odisha operates 3 colleges: an engineering college, a management school, and a pharmacy college, serving 7,800 students, 520 teaching staff, and 340 non-teaching staff, with annual fee revenues of ₹95–110 crore. 
+This document describes the current implementation of the College ERP project: a browser-based application for academic masters, attendance, internal marks, fee ledgers, student records, risk review, notifications, and regulatory reports. The project includes a seeded demonstration dataset and a local test suite.
 
-Prior to this solution:
-- Admissions operated on disconnected spreadsheets and online forms.
-- Attendance was recorded on paper and manually re-typed into Excel weekly.
-- Marks lived in departmental spreadsheets.
-- Fees were collected at physical bank counters and matched by hand in Tally over 10 days.
-- Accreditation reports for University (BPUT/Autonomous), AICTE, and NAAC required weeks of manual data compilation.
+The implementation is a prototype, not a production deployment. Payment processing, SMS delivery, and Tally export are simulated or generated as files; they do not connect to external providers.
 
-### Financial Justification from Problem Statement
-- **Faculty Time Savings**: 520 teachers &times; 1 hr/week &times; 40 teaching weeks = 20,800 hours &times; ₹600/hr = **₹1.248 crore/year**.
-- **Office Staff Savings**: 24 office staff &times; 40% time spent re-entering data &times; ₹3.6 lakh salary = **₹34.56 lakh/year**.
-- **Total Annual Trust Savings**: **₹1.59 crore/year**.
-- **Phase 1 Budget & Timeline**: ₹9 lakh, 8-week delivery.
+## 2. Assumptions
 
----
+The following are design assumptions where implementation details were not specified in the problem statement:
 
-## 2. Core Build Scope & Objectives
+1. **[ASSUMPTION] Single-campus first release:** One campus is used as the operational slice; the schema retains campus and programme relationships for extension.
+2. **[ASSUMPTION] Internal assessment format:** Internal marks are represented as midterm (20), quiz (10), and assignment (10), totaling 40.
+3. **[ASSUMPTION] Attendance threshold:** A cumulative attendance percentage below 75% is treated as an alert condition.
+4. **[ASSUMPTION] Minor-consent indicator:** The dataset contains a minor flag and consent status as demonstrative compliance fields. This is not a legal compliance determination.
+5. **[ASSUMPTION] Local persistence:** SQLite is sufficient for local evaluation and development; a production deployment would need an operational database and migration/backup plan.
+6. **[ASSUMPTION] External integrations:** No payment gateway, messaging provider, or Tally service credentials were provided, so integrations are represented with mock payment and notification behavior and downloadable exports.
+7. **[ASSUMPTION] AI behavior:** No hosted AI model or model credentials were provided. Query interpretation and risk scoring therefore use deterministic application rules rather than a generative model.
+8. **[ASSUMPTION] Demo access:** Local reviewer/demo access is acceptable only in non-production mode and is explicitly enabled through configuration. Production use requires a separate identity and authorization design.
+9. **[ASSUMPTION] User interface:** A responsive, minimal browser UI is appropriate for the staff workflows described; the current UI is a single-page application without a client framework.
+10. **[ASSUMPTION] Synthetic seed data:** Seed records are demonstration data and must not be interpreted as verified real student or staff records.
 
-As directed by the Problem Statement Core Build specification:
-> *"Software Engineering candidates must ship this slice end to end, in about 6 to 8 screens: one campus only: masters for one programme, mobile attendance, internal marks with moderation lock, and fee dues. Roles: faculty and office admin. AI: at-risk student flag. Hard part: offline attendance in class with sync. Mock payments, messages and outside systems, and seed from the sample data. The rest of MUST HAVE is optional depth."*
+## 3. Architecture and rationale
 
-### Key Success Metrics
-1. **Attendance Entry**: Attendance recorded the same day for &gt;95% of classes (Current: 96.4%).
-2. **University Mark Upload**: Zero re-typing required via direct university portal export format.
-3. **Monthly Fee Reconciliation**: Reduced from 10 days to 1 day via automated Tally XML/CSV exports.
-4. **Attendance Marking Speed**: In-class roll-call completed in under 30 seconds per class.
+The application uses a small layered architecture:
 
----
-
-## 3. Assumptions (Explicitly Labeled as per Brief Rules)
-
-Every assumption utilized in this technical design has been explicitly cataloged below:
-
-* **[ASSUMPTION-01: Primary Campus Slice]**: Phase 1 is scoped to Campus 1: "Bhubaneswar Engineering College" (Campus code `BBSR-ENG`), part of the Company A Educational Trust umbrella.
-* **[ASSUMPTION-02: Target Academic Programmes]**: The core build focuses on the B.Tech Computer Science & Engineering (BTECH-CSE) cohort, while also seeding B.Tech Mechanical Engineering and MBA to demonstrate multi-programme capability and fulfill the exact sample data requirements.
-* **[ASSUMPTION-03: Internal Evaluation Framework]**: Internal assessment is calibrated to a maximum of 40 marks as mandated by state university / BPUT guidelines, partitioned into three components: Mid-term Examination (Max 20 marks), Continuous Assessment / Quiz (Max 10 marks), and Practical / Assignment (Max 10 marks). Minimum internal passing threshold is set to 40% (16.0 / 40.0).
-* **[ASSUMPTION-04: Attendance Shortage Norm]**: AICTE and university statutory regulations mandate a fixed 75.0% minimum cumulative attendance threshold. Below 75.0%, students are flagged for debarment from university end-semester examinations.
-* **[ASSUMPTION-05: Classroom Connectivity Profile]**: College classrooms in Bhubaneswar experience intermittent or weak Wi-Fi. The client application must function offline as a Progressive Web App (PWA) with client-side queuing and background synchronization.
-* **[ASSUMPTION-06: DPDP Act 2023 Age of Majority]**: Under India's Digital Personal Data Protection Act 2023, students under 18 years of age at admission are classified as minors requiring explicit verifiable parental/guardian consent flags and strict record access audit logging.
-* **[ASSUMPTION-07: Bilingual Parent Communications]**: In accordance with the local socio-cultural context of Odisha, automated parent notifications (SMS and WhatsApp) are generated in both English and Odia script (ଓଡ଼ିଆ).
-* **[ASSUMPTION-08: AI Engine Boundaries]**: The Plain-English AI query assistant operates exclusively as a **read-only** inquiry system with strict AST-level mutation prevention. AI at-risk flags spawn **mentor counseling tasks only** and are prohibited from directly modifying marks or attendance.
-* **[ASSUMPTION-09: Financial Reconciliation Integration]**: Outside bank systems and payment gateways are simulated in test mode, emitting structured Tally ERP 9 / TallyPrime XML voucher import files to achieve 1-day reconciliation.
-
----
-
-## 4. Architecture & Technical Choices
-
-### Architectural Diagram
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│               Client Tier: PWA Frontend (HTML5 / Vanilla ES6 / CSS3)    │
-│  - Offline Cache (sw.js)      - LocalStorage Queue    - <30s UI Flow   │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP / REST / JSON
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│             Application Tier: FastAPI Gateway (Port 8000)               │
-│  - Static Asset Mounting      - JWT & Role-Based Access Control (RBAC) │
-│  - Input Validation (Pydantic v2) - CORS & Error Handling               │
-└───────────────────┬────────────────────────────────┬───────────────────┘
-                    │                                │
-                    ▼                                ▼
-┌─────────────────────────────────────┐  ┌───────────────────────────────┐
-│         Business Services           │  │      AI & Analytics Engine    │
-│  - Attendance & Idempotent Sync     │  │  - NL Query Parser & Safe AST │
-│  - Marks Moderation State Machine   │  │  - Filter Trace Inspector     │
-│  - Fees & Tally XML Formatter       │  │  - Multi-Factor At-Risk ML/Alg│
-│  - Bilingual Notification Engine    │  │  - Automated Mentor Tasks     │
-└───────────────────┬─────────────────┘  └───────────────┬───────────────┘
-                    │                                    │
-                    └─────────────────┬──────────────────┘
-                                      ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│             Persistence Tier: SQLAlchemy 2.0 + SQLite (WAL Mode)       │
-│  - Foreign Keys Enforced      - High-Concurrency Read/Write WAL        │
-│  - 14 Normalized Relational Entities - Tamper-Evident Exam Audit Logs  │
-└────────────────────────────────────────────────────────────────────────┘
+```text
+Browser: HTML + CSS + JavaScript
+  - Single-page navigation and forms
+  - Service worker for static assets
+  - Local attendance queue for offline capture and later sync
+              | HTTP / JSON
+FastAPI application
+  - REST endpoints and Pydantic request validation
+  - Authentication helpers and endpoint dependencies
+  - Static page and asset hosting
+              |
+SQLAlchemy services and models
+  - Attendance, marks, fees, notifications, risk, reporting
+              |
+SQLite database (WAL enabled by the database setup)
 ```
 
-### Why This Architecture Was Chosen
-1. **Zero-Dependency Evaluator Experience**: No npm installs, node_modules conflicts, or separate database servers. The entire ERP boots with a single command (`python run.py`) and is immediately testable.
-2. **Sub-30-Second Classroom Attendance**: Lightweight vanilla JavaScript with zero framework hydration lag ensures instantaneous button response on low-end mobile devices.
-3. **PWA & Offline Idempotency**: Service Worker caching plus localStorage queuing ensures faculty can mark attendance inside thick concrete classrooms with zero connectivity. The backend uses unique `client_batch_id` tokens to ensure idempotent merging on network retry.
-4. **SQLite WAL Mode**: Write-Ahead Logging allows concurrent reads while writes occur, delivering sub-15ms query responses suitable for the 7,800-student results day concurrency requirements.
+**Why this approach:** FastAPI provides a compact Python API and validation layer; SQLAlchemy keeps persistence and business logic separated from routes; SQLite makes local setup simple; and plain HTML/CSS/JavaScript avoids a separate frontend build step. The service worker and local queue support the attendance workflow when connectivity is interrupted.
 
----
+The current app is started with `python run.py`. No hosted production infrastructure or publicly reachable live app is included in this repository.
 
-## 5. Data Model & Entity Relationships
+## 4. Data model
 
-The relational schema comprises 14 normalized tables:
-- `users`: Authentication identities, per-password salted PBKDF2-SHA256 hashes, campus/department scoping, and roles (`office_admin`, `faculty`, `exam_moderator`). Legacy hashes are upgraded after a successful login.
-- `campuses`: Campus master (`BBSR-ENG`, Bhubaneswar Engineering College).
-- `programmes`: Academic offerings (`BTECH-CSE`, `BTECH-ME`, `MBA`).
-- `batches`: Cohort tracking (`2024-2028`, Section A, Year 2, Semester 3).
-- `subjects`: Courses with credit values and 40-mark internal ceilings (`CS301`, `CS302`, `ME301`, `MBA101`).
-- `faculty` & `faculty_subject_mappings`: Teacher assignments.
-- `students`: Central student records with DPDP Act 2023 minor consent tracking.
-- `attendance_sessions` & `attendance_records`: Period-wise attendance with `client_batch_id` idempotency.
-- `internal_marks`: Component breakdown (Midterm, Quiz, Assignment, Total) and moderation status.
-- `exam_audit_logs`: Immutable, tamper-evident exam audit trail recording every score change.
-- `fee_structures`, `student_fee_ledgers`, `fee_payments`: Financial accounting, scholarship waivers, and receipt tracking.
-- `at_risk_flags` & `mentor_tasks`: Early warning alerts and assigned counseling tasks.
-- `notification_logs`: Dual-language English and Odia parent SMS logs.
-- `dpdp_audit_logs`: Verifiable audit trail for student data inspections.
+The relational model groups related records as follows:
 
-### Benchmark Seed Data Verification
-The database is pre-seeded with the exact benchmark records from the problem statement:
-- **Subhashree Mohanty** (`ENG-24-CSE-0412`): B.Tech CSE, Year 2, Attendance **81.5%**, Internal Marks **33/40**, Fee Due **₹0**.
-- **Ankit Panda** (`ENG-24-ME-0177`): B.Tech Mechanical, Year 2, Attendance **68.2%** (Shortage Alert), Internal Marks **21/40**, Fee Due **₹45,000** &rarr; Flagged **HIGH RISK**, Automated Mentor Task created.
-- **Farheen Ali** (`MBA-25-0093`): MBA, Year 1, Attendance **92.0%**, Internal Marks **36/40**, Fee Due **₹0**.
+- **Organization and identity:** `Campus`, `Programme`, `Batch`, `Subject`, `Faculty`, `FacultySubjectMapping`, and `User`.
+- **Student records:** `Student`, including academic identifiers, batch, contact fields, and consent-status fields.
+- **Attendance:** `AttendanceSession` stores a class/date/period and client sync identifier; `AttendanceRecord` stores each student's status for that session.
+- **Marks:** `InternalMark` stores assessment components and moderation state; `ExamAuditLog` records changes and moderation actions.
+- **Fees:** `FeeStructure`, `StudentFeeLedger`, and `FeePayment` store charges, balances, and simulated payment receipts.
+- **Intervention and communication:** `AtRiskFlag`, `MentorTask`, and `NotificationLog`.
+- **Access auditing:** `DPDPAuditLog` records student-profile access when audit logging is enabled.
 
----
+Foreign keys connect students to batches/programmes and link their attendance, marks, ledger, risk flags, and tasks. A student/subject uniqueness constraint prevents duplicate internal-mark rows for the same pair.
 
-## 6. How the AI & Automation Engine Works
+## 5. Main application flows
 
-### Plain-English Natural Language Query Engine
-Office staff can query the ERP in conversational English without SQL knowledge.
-- **Example Queries**:
-  - *"how many second-year students are below 75% this month?"*
-  - *"show students with fee dues above 30000"*
-  - *"which students have internal marks below 24?"*
-- **Execution Pipeline**:
-  1. **Lexical & Intent Analysis**: Extracts target academic years, percentage thresholds, fee balances, and course identifiers.
-  2. **Security & AST Guardrail**: Inspects query text for forbidden mutation commands (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`). Any mutation attempt is immediately blocked with a `BLOCKED` safety audit badge, zero rows modified, and an explanatory alert.
-  3. **Role-Scoped Execution**: Queries are constrained to the authenticated user's campus and department permissions.
-  4. **Transparency & Explainability Card**: Returns:
-     - Applied filters with plain English rationale (e.g. `students.current_year = 2`, `attendance_percentage < 75.0`).
-     - Generated safe SQL `SELECT` statement.
-     - Row count and execution latency in milliseconds.
-     - Confidence score.
-- **Error & Ambiguity Handling**: If a user submits an ambiguous query (e.g. *"who needs help?"*), the assistant displays an "Unsure / Broad Query" badge, explains the ambiguity, shows zero or broad rows, and offers 4 one-click safe sample queries.
+### Attendance and offline synchronization
 
-### Multi-Factor At-Risk Engine
-- **Algorithm Weights**:
-  - Attendance Factor (50% weight): Shortage below 75.0% triggers severe risk penalty.
-  - Internal Marks Factor (35% weight): Scores below pass (16/40) or below class average (24/40) trigger academic warning.
-  - Fee Arrears Factor (15% weight): Balances &gt; ₹30,000 flag financial distress.
-- **Strict Boundary**: AI only creates an actionable `MentorTask` assigned to faculty (e.g., *"Schedule 1-on-1 counseling with Ankit Panda regarding 68.2% attendance"*). **It never alters grades or attendance records.**
+1. The browser requests the active students for a batch.
+2. Staff mark each student present, absent, or late and submit the session.
+3. When offline mode is active, the browser queues the payload in local storage and updates its connection/queue indicator.
+4. When connectivity returns, queued payloads are posted to the attendance API.
+5. The server uses the client batch identifier to avoid creating a duplicate session on retry, stores records, and evaluates shortage alerts.
 
----
+### Marks and moderation
 
-## 7. UI & UX Design Decisions
+1. The browser loads a subject/batch marks sheet.
+2. Editable rows can be saved; locked rows are disabled and excluded from bulk updates.
+3. The service enforces per-component limits and prevents edits to locked records.
+4. Mark edits and moderation changes are recorded in the exam audit log.
+5. The marks sheet can be exported as a university-format CSV.
 
-The design follows the client's explicit mandate:
-> *"The client values good, minimal design: clean layouts, white space, a restrained palette and clear type, with nothing on screen that lacks a purpose. Design counts as much as features. An ERP is used all day by hundreds of people, so calm, consistent screens matter most..."*
+### Fees and receipt
 
-### The 8 Key Screens & Their Purpose
-1. **Screen 1: Dashboard**: Executive overview highlighting client KPIs (96.4% same-day attendance, 1-day fee reconciliation, flagged students, and active automated shortage alerts).
-2. **Screen 2: Academic Masters**: Campus slice overview detailing programmes, active batches, and course credit structures with 40-mark ceilings.
-3. **Screen 3: Mobile Attendance (<30s Speed Flow)**:
-   - "Mark All Present" button marks entire cohort in 1 tap.
-   - Large touch targets allow rapid toggle to Absent or Late.
-   - Offline connectivity badge shows network status and queued counts.
-   - Evaluator "Sim Offline" button allows instant testing of weak classroom Wi-Fi.
-4. **Screen 4: Internal Marks & Moderation Lock**:
-   - Tabular grid displaying Midterm (20), Quiz (10), Assignment (10), and Total (40).
-   - Dynamic real-time score summation.
-   - State transition controls (`Draft` &rarr; `Submitted` &rarr; `Moderated_Locked`).
-   - Tamper-evident audit log modal.
-   - 1-click BPUT university upload format CSV export.
-5. **Screen 5: Fee Dues & Tally Accounting**:
-   - Real-time ledger view tracking net fees, scholarships, and balances.
-   - Test-mode mock payment modal issuing instant receipts (`RCP-2026-XXXXX`).
-   - Standard Tally ERP 9 / TallyPrime XML voucher import export.
-6. **Screen 6: AI Assistant & Risk Intelligence**:
-   - Plain-English search bar with clickable chip prompts.
-   - Filter trace inspector, row count, latency badge, and SQL viewer.
-   - At-risk student table with mentor task assignment and resolution controls.
-7. **Screen 7: Regulatory Compliance & Odia Messaging**:
-   - NAAC Criterion 2.5 Continuous Internal Evaluation transparency metrics.
-   - AICTE Mandatory Public Disclosure metrics.
-   - Bilingual notification table showcasing English and Odia script SMS alerts.
-8. **Screen 8: Student Records & DPDP 2023**:
-   - Comprehensive student directory with DPDP Act minor consent verification.
+1. The fee screen requests student ledgers and displays balances.
+2. A mock payment request reduces the balance and creates a receipt record.
+3. The receipt URL returned by the payment request resolves to that payment's details.
+4. Fee reconciliation data can be downloaded as CSV or Tally-compatible XML. No external payment or accounting system is called.
 
----
+### Student profile and reports
 
-## 8. What Was Cut & What Would Be Built Next
+The directory loads student summaries. Opening a profile requests one student's details and can add a profile-access audit record. Separate report endpoints provide KPI, NAAC-style, and AICTE-style data based on the stored records.
 
-### What Was Cut (Scoped Out to Ensure Production Finish)
-- **Timetable Generation**: Explicitly marked OUT OF SCOPE in problem statement; deferred to Phase 2.
-- **Payroll & Staff Biometric Leave**: Explicitly marked OUT OF SCOPE; trust currently uses paper leave.
-- **Hostel, Transport, and Library**: Explicitly marked OUT OF SCOPE.
-- **Physical Bank Hardware Terminal Integration**: Bank counter transactions are simulated in test mode via direct ledger recording and Tally XML reconciliation.
+## 6. AI and risk behavior
 
-### Roadmap for Next Phase (Weeks 9–16)
-1. **Phase 2 Multi-Campus Expansion**: Roll out to Campus 2 (Management School) and Campus 3 (Pharmacy College) using the existing campus-scoped data architecture.
-2. **Production SMS/WhatsApp Gateway**: Bind mock dispatchers to Twilio or Gupshup India enterprise SMS gateways.
-3. **Biometric Machine Sync**: Connect classroom finger/face scanners to the attendance ingestion queue using the existing `client_batch_id` idempotency architecture.
-4. **Payment Gateway Production Webhooks**: Connect Razorpay/Cashfree webhooks to transition mock receipts to live bank settlement.
+The application does not call a generative AI model. The query assistant uses deterministic text matching to identify supported filters such as year, programme, attendance, fee due, and marks. It then applies those filters through application/database queries and returns a filter summary, generated read-only SQL description, results, and safety status. A basic forbidden-keyword guard rejects mutation-oriented prompts; this should not be treated as a general-purpose SQL security boundary.
+
+The risk engine calculates a deterministic score from attendance, marks, and fee balance rules. It returns risk levels and trigger explanations, and creates or updates intervention flags and mentor tasks. It does not update a student's attendance or marks.
+
+Parent notifications have mock status and are stored in the notification log. No SMS or WhatsApp is sent.
+
+## 7. UI and design decisions
+
+The UI is a single-page interface with eight operational screens:
+
+1. **Dashboard:** summarizes attendance KPI and students needing follow-up.
+2. **Academic Masters:** shows campus programmes, batches, and subjects.
+3. **Mobile Attendance:** prioritizes quick roster actions and offline queue visibility.
+4. **Internal Marks:** provides a tabular component editor, moderation controls, audit view, and CSV export.
+5. **Fees:** presents ledger balances, simulated payment, receipt details, and exports.
+6. **AI Query and Risk:** combines supported plain-language filters with risk and mentor-task views.
+7. **Reports and Notifications:** presents report data and mock bilingual notification history.
+8. **Student Directory:** summarizes student details and supports profile inspection.
+
+The interface uses a restrained palette, compact tables, status badges, and task-specific actions to keep common staff workflows visible. The frontend role selector is a demonstration control; it is not a substitute for server-enforced role authorization.
+
+## 8. Scope limits and next steps
+
+**Not implemented:** public hosting, real payment processing, live SMS/WhatsApp delivery, live Tally connectivity, production-grade identity/role management, and generative-AI inference.
+
+**Recommended next work:** define production roles and permissions on every protected endpoint; add database migrations and deployment/backup procedures; integrate external services only with approved credentials and audit controls; add automated browser tests; and perform privacy, security, and load reviews against confirmed requirements.
+
+## 9. Verification
+
+At the time this submission was prepared, the automated suite completed with 29 passing tests. The API and browser workflows were also exercised locally on a separate seeded database. These checks do not constitute a production readiness or compliance certification.
